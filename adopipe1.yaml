@@ -1,0 +1,118 @@
+trigger: none
+pr: none
+
+variables:
+  terraformVersion: '1.14.8'
+  workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+  ARM_CLIENT_ID: '973195d4-9965-4184-b8ec-0deb89d4d67e'
+  ARM_CLIENT_SECRET: 'Svl8Q~gcnPA-4X6FHqjiWVmJkcqwz78zykXPKcLl'
+  ARM_SUBSCRIPTION_ID: '79bdf282-66fa-4bdc-b5dc-5f029b9647de'
+  ARM_TENANT_ID: 'df65ce47-b9d7-4489-9610-3ea8b8385565'
+
+stages:
+
+# =============================
+# Stage 1 - Terraform Plan
+# =============================
+- stage: Plan
+  displayName: Terraform Plan
+  jobs:
+
+  - job: TerraformPlan
+    displayName: Run Terraform Plan
+    pool:
+      name: k8s-selfhosted-agents
+
+    steps:
+
+    - checkout: self
+
+    - task: TerraformInstaller@1
+      displayName: Install Terraform
+      inputs:
+        terraformVersion: $(terraformVersion)
+
+    - script: terraform version
+      displayName: Verify Terraform Version
+
+    - script: terraform init
+      workingDirectory: $(workingDirectory)
+      displayName: Terraform Init
+
+    - script: terraform plan
+      workingDirectory: $(workingDirectory)
+      displayName: Terraform Plan
+      env:
+        ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+        ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+        ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+        ARM_TENANT_ID: $(ARM_TENANT_ID)
+
+    - publish: $(workingDirectory)
+      artifact: terraformPlan
+      displayName: Publish Terraform Plan Artifact
+
+
+# =============================
+# Stage 2 - Manual Approval
+# =============================
+- stage: Approval
+  displayName: Approval Gate
+  dependsOn: Plan
+  jobs:
+
+  - job: ManualApproval
+    displayName: Await Approval
+    pool: server
+
+    steps:
+
+    - task: ManualValidation@0
+      timeoutInMinutes: 1440
+      inputs:
+        instructions: |
+          Terraform plan completed.
+          Please review the plan output in Terraform Cloud
+          and approve this stage to continue with Terraform Apply.
+        notifyUsers: ''
+        onTimeout: reject
+
+
+# =============================
+# Stage 3 - Terraform Apply
+# =============================
+- stage: Apply
+  displayName: Terraform Apply
+  dependsOn: Approval
+  jobs:
+
+  - job: TerraformApply
+    displayName: Apply Terraform Changes
+    pool:
+      name: k8s-selfhosted-agents
+
+    steps:
+
+    - checkout: self
+
+    - task: TerraformInstaller@1
+      displayName: Install Terraform
+      inputs:
+        terraformVersion: $(terraformVersion)
+
+    - download: current
+      artifact: terraformPlan
+      displayName: Download Terraform Plan Artifact
+
+    - script: terraform init
+      workingDirectory: $(workingDirectory)
+      displayName: Terraform Init
+
+    - script: terraform apply -auto-approve
+      workingDirectory: $(workingDirectory)
+      displayName: Terraform Apply
+      env:
+        ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+        ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+        ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+        ARM_TENANT_ID: $(ARM_TENANT_ID)
