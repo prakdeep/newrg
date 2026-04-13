@@ -1,0 +1,48 @@
+trigger: none
+pr: none
+
+variables:
+  terraformVersion: '1.14.8'
+  workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+  ARM_CLIENT_ID: '973195d4-9965-4184-b8ec-0deb89d4d67e'
+  ARM_CLIENT_SECRET: 'Svl8Q~gcnPA-4X6FHqjiWVmJkcqwz78zykXPKcLl'
+  ARM_TENANT_ID: 'df65ce47-b9d7-4489-9610-3ea8b8385565'
+  ARM_SUBSCRIPTION_ID: '79bdf282-66fa-4bdc-b5dc-5f029b9647de'
+
+stages:
+  
+- stage: plan
+  displayName: plan
+  jobs:
+  - job: terraformplan
+    displayName: Terrarform plan
+    pool:
+      name: k8s-selfhosted-agents
+    steps:
+    - checkout : self
+    - task: TerraformInstaller@1
+      displayName: Terraform Installation
+    
+    - script: terraform fmt
+      displayName: Terraform formatting
+
+    - script: terraform init
+      displayName: Initialise terraform
+      workingDirectory: $(workingDirectory)
+
+    - script: terraform plan
+      displayName: terraform Plan
+      workingDirectory: $(workingDirectory)
+      env:
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+        ARM_CLIENT_ID: '973195d4-9965-4184-b8ec-0deb89d4d67e'
+        ARM_CLIENT_SECRET: 'Svl8Q~gcnPA-4X6FHqjiWVmJkcqwz78zykXPKcLl'
+        ARM_TENANT_ID: 'df65ce47-b9d7-4489-9610-3ea8b8385565'
+        ARM_SUBSCRIPTION_ID: '79bdf282-66fa-4bdc-b5dc-5f029b9647de' 
+
+
+        
+
+      
+  
+    
