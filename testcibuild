@@ -38,9 +38,26 @@ stages:
         ARM_CLIENT_ID: '973195d4-9965-4184-b8ec-0deb89d4d67e'
         ARM_CLIENT_SECRET: 'Svl8Q~gcnPA-4X6FHqjiWVmJkcqwz78zykXPKcLl'
         ARM_TENANT_ID: 'df65ce47-b9d7-4489-9610-3ea8b8385565'
-        ARM_SUBSCRIPTION_ID: '79bdf282-66fa-4bdc-b5dc-5f029b9647de' 
+        ARM_SUBSCRIPTION_ID: '79bdf282-66fa-4bdc-b5dc-5f029b9647de'
 
+    - publish: $(workingDirectory)
+      artifact: terraformPlan
+      displayName: Publish TF artifact
+      
+- stage: Manual Approval
+  displayName: approval terraform
+    jobs:
+    - job: terraformApproval
+      displayName: Terraform Approval gate
+      steps:
+      - task: ManualValidation@0
+        displayName: manualvalidate
+        timeoutInMinutes:1440
+        inputs:
+        notifyUsers: ''
+        onTimeOut: reject
 
+        
         
 
       
