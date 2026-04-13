@@ -52,7 +52,7 @@ stages:
       steps:
       - task: ManualValidation@0
         displayName: manualvalidate
-        timeoutInMinutes:1440
+        timeoutInMinutes: 1440
         inputs:
         notifyUsers: ''
         onTimeOut: reject
